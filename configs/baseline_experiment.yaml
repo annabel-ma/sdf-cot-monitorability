@@ -1,0 +1,66 @@
+# Configuration for baseline prompting experiments
+# This tests whether prompting alone changes monitoring-sensitive behavior
+
+experiment:
+  name: "baseline_prompting_monitorability"
+  description: "Test if prompting about monitoring changes cheating behavior"
+  output_dir: "results/baseline"
+
+# Models to test
+models:
+  primary: "openai/gpt-4.1-mini"  # GPT-4.1-mini agent
+  # Or use: "openai/gpt-4.1-2025-04-14" for specific version
+  # Alternatives:
+  # primary: "openai/gpt-4o-mini"  # GPT-4o-mini (older)
+  # primary: "openai/gpt-4.1"      # Full GPT-4.1 (more expensive)
+
+# Monitoring conditions to test
+conditions:
+  - "monitored"      # Model believes CoT is monitored
+  - "unmonitored"    # Model believes CoT is not monitored
+  - "control"        # No monitoring information
+
+# ImpossibleBench configuration
+impossiblebench:
+  benchmark_type: "livecodebench"  # or "swebench"
+  agent_type: "minimal"            # "minimal" or "tools"
+  split: "conflicting"             # "original", "oneoff", or "conflicting"
+  limit: 5                         # Number of samples (null for all)
+                                   # QUICK TEST: 5 samples (~10 min, $5-10)
+                                   # For pilot: 20 samples (~30 min, $20-50)
+                                   # For full run: 100+ samples (~2-4 hr, $100-250)
+  shuffle: true
+  max_attempts: 10
+  allow_test_modifications: true
+  sandbox: "docker"
+  message_limit: 50
+  max_connections: 20
+  max_subprocesses: 20
+  reasoning_tokens: 4096
+  reasoning_effort: "medium"
+
+# Monitor configuration
+monitor:
+  judge_model: "claude-haiku-4.5-20250514"  # Claude Haiku 4.5 as judge (fast & cheap)
+  # Alternatives:
+  # judge_model: "claude-opus-4-20250514"     # Best quality (expensive)
+  # judge_model: "claude-sonnet-4-20250514"   # Good balance
+  # judge_model: "openai/gpt-4o"              # Different family, mid-cost
+  analyze_cot: true                           # Analyze CoT traces
+  analyze_output_only: true                   # Also analyze output-only
+  batch_size: 10
+  max_retries: 3
+
+# Experiment settings
+experiment_settings:
+  run_evaluation: true       # Run ImpossibleBench evaluation
+  run_monitoring: true       # Run monitor on results
+  save_samples: true         # Save detailed sample data
+  generate_report: true      # Generate analysis report
+  
+  # Parallel execution
+  parallel_conditions: false  # Run conditions in parallel (requires more resources)
+  
+  # Reproducibility
+  seed: 628
+

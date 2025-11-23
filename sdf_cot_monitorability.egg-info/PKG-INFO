@@ -1,3 +1,24 @@
+Metadata-Version: 2.4
+Name: sdf-cot-monitorability
+Version: 0.1.0
+Summary: SDF CoT Monitorability
+Requires-Python: <3.13,>=3.12
+Description-Content-Type: text/markdown
+Requires-Dist: python-dotenv>=1.0.0
+Requires-Dist: pyyaml>=6.0.0
+Requires-Dist: inspect-ai>=0.3.50
+Requires-Dist: openai>=1.58.0
+Requires-Dist: anthropic>=0.42.0
+Requires-Dist: pandas>=2.0.0
+Requires-Dist: numpy>=1.24.0
+Requires-Dist: tqdm>=4.66.0
+Requires-Dist: rich>=13.0.0
+Requires-Dist: fire>=0.7.0
+Requires-Dist: pydantic>=2.10.0
+Requires-Dist: aiofiles>=22.0
+Requires-Dist: impossiblebench
+Requires-Dist: false-facts
+
 # SDF CoT Monitorability
 
 Research project investigating whether knowledge of being monitored changes model behavior in chain-of-thought reasoning.
