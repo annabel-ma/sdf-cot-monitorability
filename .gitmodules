@@ -1,0 +1,6 @@
+[submodule "external/false-facts"]
+	path = external/false-facts
+	url = https://github.com/safety-research/false-facts
+[submodule "external/impossiblebench"]
+	path = external/impossiblebench
+	url = https://github.com/safety-research/impossiblebench

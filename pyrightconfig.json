@@ -1,0 +1,7 @@
+{
+  "include": ["sdf_cot_monitorability", "tests"],
+  "venvPath": ".",
+  "venv": ".venv",
+  "typeCheckingMode": "standard",
+  "pythonVersion": "3.13"
+}

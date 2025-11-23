@@ -1,0 +1,4 @@
+model: "gpt-4o"
+seed: 13
+dataset: "small_demo"
+max_examples: 25
