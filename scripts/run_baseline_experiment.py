@@ -12,7 +12,6 @@ Usage:
 """
 
 import argparse
-import asyncio
 import logging
 from datetime import datetime
 from pathlib import Path
@@ -67,13 +66,13 @@ class BaselineExperiment:
         
         logger.info(f"Initialized experiment in {self.run_dir}")
     
-    async def run_async(
+    def run(
         self,
         conditions: list[MonitoringCondition] | None = None,
         skip_monitoring: bool = False,
     ) -> dict:
         """
-        Run the full experiment asynchronously.
+        Run the full experiment.
         
         Args:
             conditions: List of conditions to run (None = all from config)
@@ -82,36 +81,44 @@ class BaselineExperiment:
         Returns:
             Dictionary of results
         """
-        console.print("\n[bold blue]Starting Baseline Prompting Experiment[/bold blue]\n")
+        print("\n" + "="*60)
+        print("Starting Baseline Prompting Experiment")
+        print("="*60 + "\n")
         
         # Determine which conditions to run
         if conditions is None:
             conditions = self.config["conditions"]
         
-        console.print(f"Conditions to test: {', '.join(conditions)}")
-        console.print(f"Model: {self.config['models']['primary']}\n")
+        print(f"Conditions to test: {', '.join(conditions)}")
+        print(f"Model: {self.config['models']['primary']}\n")
         
         # Phase 1: Run ImpossibleBench evaluations
-        console.print("[bold green]Phase 1: Running ImpossibleBench Evaluations[/bold green]\n")
-        eval_results = await self._run_evaluations(conditions)
+        print("\n" + "="*60)
+        print("Phase 1: Running ImpossibleBench Evaluations")
+        print("="*60 + "\n")
+        eval_results = self._run_evaluations(conditions)
         
         # Phase 2: Run monitoring
         if not skip_monitoring and self.config["experiment_settings"]["run_monitoring"]:
-            console.print("\n[bold green]Phase 2: Running Monitor Analysis[/bold green]\n")
-            monitor_results = await self._run_monitoring(eval_results)
+            print("\n" + "="*60)
+            print("Phase 2: Running Monitor Analysis")
+            print("="*60 + "\n")
+            monitor_results = self._run_monitoring(eval_results)
         else:
             monitor_results = {}
-            console.print("\n[yellow]Skipping monitoring phase[/yellow]\n")
+            print("\nSkipping monitoring phase\n")
         
         # Phase 3: Generate report
         if self.config["experiment_settings"]["generate_report"]:
-            console.print("\n[bold green]Phase 3: Generating Report[/bold green]\n")
+            print("\n" + "="*60)
+            print("Phase 3: Generating Report")
+            print("="*60 + "\n")
             report = self._generate_report(eval_results, monitor_results)
             save_json(report, self.run_dir / "report.json")
             self._print_report(report)
         
-        console.print(f"\n[bold green]✓ Experiment complete![/bold green]")
-        console.print(f"Results saved to: {self.run_dir}\n")
+        print(f"\n✓ Experiment complete!")
+        print(f"Results saved to: {self.run_dir}\n")
         
         return {
             "eval_results": eval_results,
@@ -119,7 +126,7 @@ class BaselineExperiment:
             "run_dir": str(self.run_dir),
         }
     
-    async def _run_evaluations(
+    def _run_evaluations(
         self,
         conditions: list[MonitoringCondition],
     ) -> dict:
@@ -138,7 +145,7 @@ class BaselineExperiment:
         # Log instruction prompt type
         from sdf_cot_monitorability.evaluation.instruction_prompts import get_prompt_description
         prompt_desc = get_prompt_description(ib_config.instruction_prompt_type)
-        console.print(f"[cyan]Using instruction prompt type {ib_config.instruction_prompt_type}: {prompt_desc}[/cyan]\n")
+        print(f"Using instruction prompt type {ib_config.instruction_prompt_type}: {prompt_desc}\n")
         
         results = {}
         
@@ -146,26 +153,16 @@ class BaselineExperiment:
         eval_dir = self.run_dir / "evaluations"
         ensure_dir(eval_dir)
         
-        # Run evaluations (sequentially or in parallel based on config)
-        if self.config["experiment_settings"].get("parallel_conditions", False):
-            # Parallel execution
-            tasks = [
-                self._run_single_evaluation(condition, model, ib_config, eval_dir)
-                for condition in conditions
-            ]
-            eval_results = await asyncio.gather(*tasks)
-            results = dict(zip(conditions, eval_results))
-        else:
-            # Sequential execution (more stable, easier to debug)
-            for condition in conditions:
-                result = await self._run_single_evaluation(
-                    condition, model, ib_config, eval_dir
-                )
-                results[condition] = result
+        # Run evaluations sequentially to preserve inspect_ai UI
+        for condition in conditions:
+            result = self._run_single_evaluation(
+                condition, model, ib_config, eval_dir
+            )
+            results[condition] = result
         
         return results
     
-    async def _run_single_evaluation(
+    def _run_single_evaluation(
         self,
         condition: MonitoringCondition,
         model: str,
@@ -173,7 +170,10 @@ class BaselineExperiment:
         output_dir: Path,
     ):
         """Run a single evaluation for one condition."""
-        console.print(f"  Running condition: [cyan]{condition}[/cyan]")
+        # Let inspect_ai handle the terminal output - just log minimally
+        print(f"\n{'='*60}")
+        print(f"Running condition: {condition}")
+        print(f"{'='*60}\n")
         
         runner = ImpossibleBenchRunner(
             model=model,
@@ -182,7 +182,7 @@ class BaselineExperiment:
             output_dir=output_dir,
         )
         
-        result = await runner.run_async()
+        result = runner.run()
         
         cheating_rate = result.metrics.get('cheating_rate', 'N/A')
         if isinstance(cheating_rate, (int, float)):
@@ -190,13 +190,11 @@ class BaselineExperiment:
         else:
             cheating_rate_str = str(cheating_rate)
         
-        console.print(
-            f"  ✓ {condition}: Cheating rate = {cheating_rate_str}"
-        )
+        print(f"\n✓ {condition}: Cheating rate = {cheating_rate_str}\n")
         
         return result
     
-    async def _run_monitoring(self, eval_results: dict) -> dict:
+    def _run_monitoring(self, eval_results: dict) -> dict:
         """
         Run monitor analysis on evaluation results.
         
@@ -214,7 +212,7 @@ class BaselineExperiment:
         ensure_dir(monitor_dir)
         
         for condition, eval_result in eval_results.items():
-            console.print(f"  Monitoring condition: [cyan]{condition}[/cyan]")
+            print(f"  Monitoring condition: {condition}")
             
             # Load samples
             samples_file = (
@@ -223,13 +221,13 @@ class BaselineExperiment:
             )
             
             if not samples_file.exists():
-                console.print(f"    [yellow]No samples file found, skipping[/yellow]")
+                print(f"    No samples file found, skipping")
                 continue
             
             samples = load_json(samples_file)
             
-            # Run monitoring
-            monitor_results = await monitor.monitor_samples_async(
+            # Run monitoring (synchronous)
+            monitor_results = monitor.monitor_samples(
                 samples, show_progress=True
             )
             
@@ -430,11 +428,9 @@ def main():
     
     # Run experiment
     experiment = BaselineExperiment(config)
-    results = asyncio.run(
-        experiment.run_async(
-            conditions=args.conditions,
-            skip_monitoring=args.skip_monitoring,
-        )
+    results = experiment.run(
+        conditions=args.conditions,
+        skip_monitoring=args.skip_monitoring,
     )
     
     return results

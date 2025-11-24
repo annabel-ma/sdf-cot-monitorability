@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
-from inspect_ai import eval_async
+from inspect_ai import eval
 from inspect_ai.log import EvalLog
 
 from sdf_cot_monitorability.prompts import (
@@ -133,9 +133,9 @@ class ImpossibleBenchRunner:
         
         return task
     
-    async def run_async(self) -> EvaluationResult:
+    def run(self) -> EvaluationResult:
         """
-        Run the evaluation asynchronously.
+        Run the evaluation (synchronous for proper inspect_ai UI display).
         
         Returns:
             Evaluation results
@@ -148,17 +148,12 @@ class ImpossibleBenchRunner:
         log_dir = self.output_dir / "logs" / f"{self.condition}_{self.model.replace('/', '_')}"
         ensure_dir(log_dir)
         
-        # Run evaluation with inspect_ai
-        # We need to set the system message for the monitoring condition
-        # inspect_ai uses system_message parameter
-        from inspect_ai.model import ChatMessageSystem
-        
-        system_message = ChatMessageSystem(content=self.system_prompt)
-        
-        logs = await eval_async(
+        # Run evaluation with inspect_ai (synchronous for proper UI display)
+        # Pass the system prompt as a string for the monitoring condition
+        logs = eval(
             task,
             model=self.model,
-            system_message=system_message,
+            system_message=self.system_prompt,  # Pass as string
             max_connections=self.config.max_connections,
             max_subprocesses=self.config.max_subprocesses,
             max_sandboxes=self.config.max_subprocesses,

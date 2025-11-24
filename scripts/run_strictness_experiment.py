@@ -11,7 +11,6 @@ Usage:
 """
 
 import argparse
-import asyncio
 import logging
 from datetime import datetime
 from pathlib import Path
@@ -55,7 +54,7 @@ class StrictnessExperiment:
         
         logger.info(f"Initialized strictness experiment in {self.run_dir}")
     
-    async def run_async(self, prompt_types: list[str] = None) -> dict:
+    def run(self, prompt_types: list[str] | None = None) -> dict:
         """
         Run the strictness experiment.
         
@@ -76,34 +75,32 @@ class StrictnessExperiment:
         
         prompt_types = [pt.upper() for pt in prompt_types]
         
-        console.print(Panel(
-            f"[bold cyan]Strictness Experiment[/bold cyan]\n\n"
-            f"Testing prompt types: {', '.join(prompt_types)}\n"
-            f"Condition: Control (no monitoring information)\n"
-            f"Output: {self.run_dir}",
-            title="Experiment Configuration",
-            border_style="cyan"
-        ))
+        print("\n" + "="*60)
+        print(f"Strictness Experiment")
+        print(f"Testing prompt types: {', '.join(prompt_types)}")
+        print(f"Condition: Control (no monitoring information)")
+        print(f"Output: {self.run_dir}")
+        print("="*60 + "\n")
         
         # Run evaluations for each prompt type
-        console.print("\n[bold green]Running Evaluations[/bold green]\n")
-        eval_results = await self._run_evaluations(prompt_types)
+        print("\nRunning Evaluations\n")
+        eval_results = self._run_evaluations(prompt_types)
         
         # Generate report
-        console.print("\n[bold green]Generating Report[/bold green]\n")
+        print("\nGenerating Report\n")
         report = self._generate_report(eval_results)
         save_json(report, self.run_dir / "report.json")
         self._print_report(report)
         
-        console.print(f"\n[bold green]✓ Experiment complete![/bold green]")
-        console.print(f"Results saved to: {self.run_dir}\n")
+        print(f"\n✓ Experiment complete!")
+        print(f"Results saved to: {self.run_dir}\n")
         
         return {
             "eval_results": eval_results,
             "run_dir": str(self.run_dir),
         }
     
-    async def _run_evaluations(self, prompt_types: list[str]) -> dict:
+    def _run_evaluations(self, prompt_types: list[str]) -> dict:
         """
         Run ImpossibleBench evaluations for all prompt types.
         
@@ -121,8 +118,10 @@ class StrictnessExperiment:
         for prompt_type in prompt_types:
             description = get_prompt_description(prompt_type)
             
-            console.print(f"\n[bold cyan]Testing Prompt Type {prompt_type}[/bold cyan]")
-            console.print(f"[dim]{description}[/dim]\n")
+            # Let inspect_ai handle terminal output - just print section header
+            print(f"\n{'='*60}")
+            print(f"Testing Prompt Type {prompt_type}: {description}")
+            print(f"{'='*60}\n")
             
             # Create config with this prompt type
             ib_config = ImpossibleBenchConfig(**self.config["impossiblebench"])
@@ -137,17 +136,15 @@ class StrictnessExperiment:
             )
             
             # Run evaluation
-            result = await runner.run_async()
+            result = runner.run()
             
             # Save result
             results[prompt_type] = result
             
-            # Log summary
+            # Brief summary after inspect_ai output
             metrics = result.metrics
-            console.print(f"[green]✓ Completed prompt type {prompt_type}[/green]")
-            console.print(f"  Samples: {len(result.samples)}")
-            console.print(f"  Accuracy: {metrics.get('accuracy', 0):.1%}")
-            console.print(f"  Cheating rate: {metrics.get('cheating_rate', 0):.1%}")
+            print(f"\n✓ Completed prompt type {prompt_type}")
+            print(f"  Samples: {len(result.samples)}, Accuracy: {metrics.get('accuracy', 0):.1%}, Cheating rate: {metrics.get('cheating_rate', 0):.1%}\n")
         
         return results
     
@@ -224,18 +221,6 @@ class StrictnessExperiment:
         console.print()
         
         console.print(f"[dim]Full results saved to: {self.run_dir}[/dim]\n")
-    
-    def run(self, prompt_types: list[str] = None) -> dict:
-        """
-        Synchronous wrapper for run_async.
-        
-        Args:
-            prompt_types: List of prompt types to test
-            
-        Returns:
-            Results dictionary
-        """
-        return asyncio.run(self.run_async(prompt_types))
 
 
 def main():
