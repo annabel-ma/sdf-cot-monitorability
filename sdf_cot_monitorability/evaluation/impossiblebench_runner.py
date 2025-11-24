@@ -55,6 +55,7 @@ class EvaluationResult:
     model: str
     config: ImpossibleBenchConfig
     log_path: Path
+    output_dir: Path
     metrics: dict[str, Any]
     samples: list[dict[str, Any]]
 
@@ -178,6 +179,7 @@ class ImpossibleBenchRunner:
             model=self.model,
             config=self.config,
             log_path=log_dir,
+            output_dir=self.output_dir,
             metrics=metrics,
             samples=samples,
         )
