@@ -25,10 +25,7 @@ impossiblebench:
   benchmark_type: "livecodebench"  # or "swebench"
   agent_type: "minimal"            # "minimal" or "tools"
   split: "conflicting"             # "original", "oneoff", or "conflicting"
-  limit: 5                         # Number of samples (null for all)
-                                   # QUICK TEST: 5 samples (~10 min, $5-10)
-                                   # For pilot: 20 samples (~30 min, $20-50)
-                                   # For full run: 100+ samples (~2-4 hr, $100-250)
+  limit: 1                         # Number of samples (1 for testing, 20 for larger, etc)
   shuffle: true
   max_attempts: 10
   allow_test_modifications: true

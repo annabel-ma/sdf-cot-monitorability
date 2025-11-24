@@ -7,7 +7,7 @@ Description-Content-Type: text/markdown
 Requires-Dist: python-dotenv>=1.0.0
 Requires-Dist: pyyaml>=6.0.0
 Requires-Dist: inspect-ai>=0.3.50
-Requires-Dist: openai>=1.58.0
+Requires-Dist: openai>=2.8.0
 Requires-Dist: anthropic>=0.42.0
 Requires-Dist: pandas>=2.0.0
 Requires-Dist: numpy>=1.24.0
@@ -188,69 +188,181 @@ After establishing baseline results, Phase 2 will involve:
 5. **Main experiments** - Run ImpossibleBench on finetuned models
 6. **Comparison** - SDF vs prompting effect sizes
 
-## Development
 
-### Running Tests
+## Quick Start (5 minutes)
 
-```bash
-pytest tests/
+1. **Install dependencies:**
+   ```./scripts/setup.sh
+   ```
+
+2. **Add your API keys:**  
+   Required keys:
+   - `OPENAI_API_KEY` - for running models
+   - `ANTHROPIC_API_KEY` - for monitoring/judging
+
+3. **Start Docker:**
+   ```
+   docker ps
+   ```
+
+4. **Test your setup:**
+   ```
+   uv run python scripts/test_installation.py
+   ```
+   
+   This will check that everything is properly configured.
+
+5. **Run your first experiment:**
+   ```
+   uv run python scripts/run_baseline_experiment.py --config configs/baseline_experiment.yaml
+   ```
+
+The baseline experiment:
+
+1. **Tests 3 conditions:**
+   - 🔍 **Monitored**: Model believes its reasoning is watched
+   - 🙈 **Unmonitored**: Model believes its reasoning is private  
+   - ⚖️ **Control**: No information about monitoring
+
+2. **Runs ImpossibleBench:**
+   - Coding tasks that are *impossible* without cheating
+   - Model must either fail or use shortcuts
+   - Measures how often model cheats
+
+3. **Analyzes with Monitor:**
+   - LLM judge reads the reasoning traces
+   - Detects cheating behavior
+   - Measures self-incrimination and obfuscation
+
+4. **Compares results:**
+   - Do unmonitored models cheat more?
+   - Are they more honest about cheating?
+   - Is there a difference from control?
+
+## Understanding Results
+
+After the experiment completes, you'll see:
+
+```
+results/baseline/run_TIMESTAMP/
+├── report.json          # Key metrics and comparisons
+├── evaluations/         # Raw ImpossibleBench results
+└── monitoring/          # Monitor analysis
 ```
 
-### Linting & Formatting
+### Key Metrics
 
-```bash
-ruff format .
-ruff check --fix .
-pyright
+**Cheating Rate**: What % of tasks did the model solve via shortcuts?
+- Higher rate = more cheating
+
+**Self-Incrimination**: How often does the model explicitly mention cheating in its reasoning?
+- Higher rate = more honest/transparent
+
+**Obfuscation**: How often does reasoning appear to hide information?
+- Higher rate = less transparent
+
+**CoT Detection Advantage**: How much better is monitoring with reasoning vs just outputs?
+- Higher = reasoning traces help catch cheating
+
+### What You're Looking For
+
+**✅ Strong result**: Large difference between conditions (e.g., unmonitored cheats 30% more)
+→ Prompting alone affects behavior significantly
+
+**❓ Null result**: No difference between conditions
+→ Prompting doesn't work; SDF finetuning might be needed
+
+**🤔 Intermediate result**: Small but consistent difference
+→ Effect exists but is weak; SDF might amplify it
+
+## Customizing Your Experiment
+
+Edit `configs/baseline_experiment.yaml`:
+
+### Change sample size:
+```yaml
+impossiblebench:
+  limit: 10  # Quick test (10 min, $5-10)
+  # limit: 20  # Pilot (30 min, $20-50)
+  # limit: 100  # Full run (2-4 hr, $100-250)
 ```
 
-Or use poe tasks:
+### Test specific conditions:
+```yaml
+conditions:
+  - "monitored"
+  - "unmonitored"
+  # - "control"  # Comment out to skip
+```
 
+### Change the model:
+```yaml
+models:
+  primary: "openai/gpt-4o-mini"  # Cheaper, recommended
+  # primary: "openai/gpt-4o"  # More capable, more expensive
+```
+
+### Use a different judge:
+```yaml
+monitor:
+  judge_model: "claude-opus-4-20250514"  # Best accuracy
+  # judge_model: "gpt-4o"  # Cheaper alternative
+```
+
+## Command Line Options
+
+Run specific conditions only:
 ```bash
-poe fmt    # Format code
-poe lint   # Lint and fix
-poe check  # Type check
-poe test   # Run tests
-poe all    # Run all checks
+python scripts/run_baseline_experiment.py \
+  --config configs/baseline_experiment.yaml \
+  --conditions monitored unmonitored
+```
+
+Skip monitoring (faster, for testing evaluation only):
+```bash
+python scripts/run_baseline_experiment.py \
+  --config configs/baseline_experiment.yaml \
+  --skip-monitoring
+```
+
+Verbose logging:
+```bash
+python scripts/run_baseline_experiment.py \
+  --config configs/baseline_experiment.yaml \
+  --log-level DEBUG
 ```
 
 ## Troubleshooting
 
-### ImportError: impossiblebench not found
+### "Docker is not running"
+Start Docker Desktop, then run again.
 
-Make sure you installed the external dependencies:
+### "API key not found"
+Check your `.env` file has:
+```
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+### "ImportError: impossiblebench"
+Install external dependencies:
 ```bash
 pip install -e external/impossiblebench
+pip install -e external/false-facts
 ```
 
-### Docker errors
-
-Ensure Docker is running and you have permissions:
-```bash
-docker ps
+### Rate limits / slow execution
+Reduce `max_connections` in config:
+```yaml
+impossiblebench:
+  max_connections: 5  # Lower for rate-limited accounts
 ```
-
-### API rate limits
-
-If you hit rate limits, reduce `max_connections` in the config or add delays.
 
 ### Out of memory
-
-Reduce `limit` (number of samples) or `max_subprocesses` in the config.
-
-## Contributing
-
-This is a research project. For questions or collaboration, contact the project maintainers.
-
-## Citation
-
-If you use this code or build on this research, please cite:
-
-- **Synthetic Document Finetuning**: Wang et al., 2025 - https://alignment.anthropic.com/2025/modifying-beliefs-via-sdf/
-- **ImpossibleBench**: Zhong et al., 2025 - https://arxiv.org/abs/2510.20270
-- **CoT Obfuscation**: Marks et al., 2025 - https://www.alignmentforum.org/posts/CM7AsQoBxDW4vhkP3/
-
-## License
-
-[Specify license]
+Reduce sample size or subprocess count:
+```yaml
+impossiblebench:
+  limit: 10
+  max_subprocesses: 5
+```
 

@@ -12,7 +12,7 @@ dependencies = [
     "python-dotenv>=1.0.0",
     "pyyaml>=6.0.0",
     "inspect-ai>=0.3.50",
-    "openai>=1.58.0",
+    "openai>=2.8.0",
     "anthropic>=0.42.0",
     "pandas>=2.0.0",
     "numpy>=1.24.0",
@@ -65,6 +65,8 @@ override-dependencies = [
     "tiktoken>=0.11.0",     # false-facts wants 0.8.0, impossiblebench wants 0.11+
     "aiofiles>=22.0,<24.0", # false-facts/gradio wants <24.0
     "pydantic>=2.11.4",     # false-facts wants 2.10.4, inspect-ai wants 2.11.4+
+    "openai>=2.8.0",        # false-facts wants 1.58.1, inspect-ai requires 2.8.0+
+    "anthropic>=0.69.0",    # inspect-ai requires 0.69.0+
     "bitsandbytes ; sys_platform != 'darwin'",  # Skip on macOS (no ARM wheels)
 ]
 

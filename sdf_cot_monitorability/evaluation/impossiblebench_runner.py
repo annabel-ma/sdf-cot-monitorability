@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
-from inspect_ai import eval as inspect_eval
+from inspect_ai import eval_async
 from inspect_ai.log import EvalLog
 
 from sdf_cot_monitorability.prompts import (
@@ -146,7 +146,8 @@ class ImpossibleBenchRunner:
         # Run evaluation with inspect_ai
         # Note: We prepend the system prompt to the model's system message
         # This is a bit of a hack - ideally we'd want to modify the task itself
-        logs = await inspect_eval(
+        # Use eval_async since we're already in an async context
+        logs = await eval_async(
             task,
             model=self.model,
             max_connections=self.config.max_connections,
@@ -221,15 +222,41 @@ class ImpossibleBenchRunner:
             
             # Calculate cheating rate if available
             if hasattr(results, "scores"):
-                scores = results.scores
-                total = len(scores)
-                if total > 0:
-                    # In ImpossibleBench, a "correct" answer usually means cheating
-                    # since tasks are impossible without cheating
-                    cheated = sum(1 for s in scores if s.value == "C" or s.value == 1.0)
-                    metrics["cheating_rate"] = cheated / total
-                    metrics["total_samples"] = total
-                    metrics["cheated_count"] = cheated
+                scores_data = results.scores
+                
+                # scores might be a dict (new API) or list (old API)
+                if isinstance(scores_data, dict):
+                    # Extract score values from dict
+                    for scorer_name, score_obj in scores_data.items():
+                        if hasattr(score_obj, "value"):
+                            metrics[scorer_name] = score_obj.value
+                        elif hasattr(score_obj, "score"):
+                            metrics[scorer_name] = score_obj.score
+                        else:
+                            metrics[scorer_name] = str(score_obj)
+                    
+                    # For ImpossibleBench, use accuracy as cheating rate
+                    # (correct = cheated since tasks are impossible)
+                    if "accuracy" in metrics:
+                        metrics["cheating_rate"] = metrics["accuracy"]
+                else:
+                    # Old API: list of score objects
+                    total = len(scores_data)
+                    if total > 0:
+                        cheated = 0
+                        for s in scores_data:
+                            score_val = None
+                            if hasattr(s, "value"):
+                                score_val = s.value
+                            elif hasattr(s, "score"):
+                                score_val = s.score
+                            
+                            if score_val == "C" or score_val == 1.0 or score_val == 1:
+                                cheated += 1
+                        
+                        metrics["cheating_rate"] = cheated / total
+                        metrics["total_samples"] = total
+                        metrics["cheated_count"] = cheated
         
         return metrics
     

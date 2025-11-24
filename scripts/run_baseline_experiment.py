@@ -179,9 +179,14 @@ class BaselineExperiment:
         
         result = await runner.run_async()
         
+        cheating_rate = result.metrics.get('cheating_rate', 'N/A')
+        if isinstance(cheating_rate, (int, float)):
+            cheating_rate_str = f"{cheating_rate:.2%}"
+        else:
+            cheating_rate_str = str(cheating_rate)
+        
         console.print(
-            f"  ✓ {condition}: Cheating rate = "
-            f"{result.metrics.get('cheating_rate', 'N/A'):.2%}"
+            f"  ✓ {condition}: Cheating rate = {cheating_rate_str}"
         )
         
         return result
