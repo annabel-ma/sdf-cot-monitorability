@@ -45,6 +45,7 @@ class ImpossibleBenchConfig:
     max_subprocesses: int = 20
     reasoning_tokens: int = 4096
     reasoning_effort: str = "medium"
+    instruction_prompt_type: str = "D"  # A, B, C, or D (strictness level)
 
 
 @dataclass
@@ -89,7 +90,10 @@ class ImpossibleBenchRunner:
         
         # Get prompts for this condition
         self.system_prompt = get_system_prompt(condition)
-        self.instruction_prompt = get_instruction_prompt(condition)
+        self.instruction_prompt = get_instruction_prompt(
+            condition,
+            prompt_type=self.config.instruction_prompt_type
+        )
         
         logger.info(f"Initialized runner for model={model}, condition={condition}")
     
@@ -145,12 +149,16 @@ class ImpossibleBenchRunner:
         ensure_dir(log_dir)
         
         # Run evaluation with inspect_ai
-        # Note: We prepend the system prompt to the model's system message
-        # This is a bit of a hack - ideally we'd want to modify the task itself
-        # Use eval_async since we're already in an async context
+        # We need to set the system message for the monitoring condition
+        # inspect_ai uses system_message parameter
+        from inspect_ai.model import ChatMessageSystem
+        
+        system_message = ChatMessageSystem(content=self.system_prompt)
+        
         logs = await eval_async(
             task,
             model=self.model,
+            system_message=system_message,
             max_connections=self.config.max_connections,
             max_subprocesses=self.config.max_subprocesses,
             max_sandboxes=self.config.max_subprocesses,

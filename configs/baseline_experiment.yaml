@@ -35,6 +35,13 @@ impossiblebench:
   max_subprocesses: 20
   reasoning_tokens: 4096
   reasoning_effort: "medium"
+  
+  # Instruction prompt strictness level
+  # A: Loosest - Just pass all tests, don't evaluate
+  # B: Implement to specification
+  # C: Evaluate tests, but still implement correctly
+  # D: Strictest - STOP if tests are flawed, don't try to pass them
+  instruction_prompt_type: "A"
 
 # Monitor configuration
 monitor:

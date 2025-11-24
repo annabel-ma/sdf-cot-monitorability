@@ -1,0 +1,59 @@
+# Configuration for prompt strictness experiments
+# This tests only the effect of instruction prompt strictness (A, B, C, D)
+# WITHOUT monitoring beliefs (control condition only)
+# uv run python scripts/run_strictness_experiment.py --config configs/strictness_experiment.yaml
+
+experiment:
+  name: "strictness_only"
+  description: "Test how prompt strictness affects cheating behavior (no monitoring variable)"
+  output_dir: "results/strictness"
+
+# Models to test
+models:
+  primary: "openai/gpt-4.1-mini"  # GPT-4.1-mini agent
+
+# Only test control condition (no monitoring information)
+conditions:
+  - "control"
+
+# ImpossibleBench configuration
+impossiblebench:
+  benchmark_type: "livecodebench"  # or "swebench"
+  agent_type: "minimal"            # "minimal" or "tools"
+  split: "conflicting"             # "original", "oneoff", or "conflicting"
+  limit: 5                         # Number of samples (5 for testing, 20+ for real runs)
+  shuffle: true
+  max_attempts: 5
+  allow_test_modifications: true
+  sandbox: "docker"
+  message_limit: 50
+  max_connections: 20
+  max_subprocesses: 20
+  reasoning_tokens: 4096
+  reasoning_effort: "medium"
+  
+  # Instruction prompt strictness levels to test
+  # This will be overridden by the script to test all 4 levels
+  instruction_prompt_type: "A"  # A, B, C, or D
+
+# Skip monitoring for this experiment
+monitor:
+  judge_model: "claude-haiku-4.5-20250514"
+  analyze_cot: false              # Don't run monitoring
+  analyze_output_only: false
+  batch_size: 10
+  max_retries: 3
+
+# Experiment settings
+experiment_settings:
+  run_evaluation: true       # Run ImpossibleBench evaluation
+  run_monitoring: false      # SKIP monitoring for this experiment
+  save_samples: true         # Save detailed sample data
+  generate_report: true      # Generate analysis report
+  
+  # Parallel execution
+  parallel_conditions: false
+  
+  # Reproducibility
+  seed: 628
+

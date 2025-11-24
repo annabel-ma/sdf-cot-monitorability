@@ -135,6 +135,11 @@ class BaselineExperiment:
         model = self.config["models"]["primary"]
         ib_config = ImpossibleBenchConfig(**self.config["impossiblebench"])
         
+        # Log instruction prompt type
+        from sdf_cot_monitorability.evaluation.instruction_prompts import get_prompt_description
+        prompt_desc = get_prompt_description(ib_config.instruction_prompt_type)
+        console.print(f"[cyan]Using instruction prompt type {ib_config.instruction_prompt_type}: {prompt_desc}[/cyan]\n")
+        
         results = {}
         
         # Create eval directory
@@ -239,12 +244,15 @@ class BaselineExperiment:
                 "analysis": analysis,
             }
             
-            console.print(
-                f"    ✓ CoT cheating rate: {analysis.get('cot_cheating_rate', 'N/A'):.2%}"
-            )
-            console.print(
-                f"    ✓ Self-incrimination: {analysis.get('self_incrimination_rate', 'N/A'):.2%}"
-            )
+            # Format rates, handling N/A values
+            cot_rate = analysis.get('cot_cheating_rate', 'N/A')
+            cot_rate_str = f"{cot_rate:.2%}" if isinstance(cot_rate, (int, float)) else str(cot_rate)
+            
+            incrim_rate = analysis.get('self_incrimination_rate', 'N/A')
+            incrim_rate_str = f"{incrim_rate:.2%}" if isinstance(incrim_rate, (int, float)) else str(incrim_rate)
+            
+            console.print(f"    ✓ CoT cheating rate: {cot_rate_str}")
+            console.print(f"    ✓ Self-incrimination: {incrim_rate_str}")
         
         return results
     
